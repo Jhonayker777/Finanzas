@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html class="dark" lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+    <title>MeMo Finanzas - Funcional</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #0f172a;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            padding: 20px;
+            padding-bottom: 100px;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+        }
+
+        .progress-bar {
+            transition: width 0.5s ease;
+        }
+
+        .blur-md {
+            filter: blur(5px);
+        }
+
+        .chip-active {
+            background: rgba(78, 222, 163, 0.2) !important;
+            border-color: #4edea3 !important;
+            color: #4edea3 !important;
+        }
+
+        .toast {
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal.hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-3">
+            <div
+                class="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center">
+                <span class="text-black font-bold text-xl">M</span>
+            </div>
+            <h1 class="text-2xl font-bold text-white">MeMo</h1>
+        </div>
+        <div>
+            <button id="resetBtn" class="px-3 py-1.5 glass-card rounded-full text-xs hover:bg-white/10">🔄
+                Reset</button>
+            <button id="statsBtn" class="px-3 py-1.5 glass-card rounded-full text-xs hover:bg-white/10 ml-2">📊
+                Stats</button>
+        </div>
+    </div>
+
+    <!-- Categorías -->
+    <div class="flex gap-2 overflow-x-auto pb-4 mb-2">
+        <button class="chip-btn px-4 py-2 glass-card rounded-full text-xs whitespace-nowrap" data-cat="family">🏠
+            Familiar</button>
+        <button class="chip-btn px-4 py-2 glass-card rounded-full text-xs whitespace-nowrap" data-cat="leisure">🎮
+            Ocio</button>
+        <button class="chip-btn px-4 py-2 glass-card rounded-full text-xs whitespace-nowrap" data-cat="savings">💰
+            Ahorro</button>
+        <button class="chip-btn px-4 py-2 glass-card rounded-full text-xs whitespace-nowrap" data-cat="investments">📈
+            Inversiones</button>
+    </div>
+
+    <!-- Balance Card -->
+    <div class="glass-card p-5 mb-4">
+        <div class="flex justify-between items-center mb-2">
+            <span class="text-xs uppercase text-gray-400">SALDO TOTAL</span>
+            <button id="toggleBalanceBtn" class="flex items-center gap-1 text-teal-400 text-xs font-bold">
+                <span id="toggleIcon">👁️</span>
+                <span id="toggleText">Ver saldo</span>
+            </button>
+        </div>
+        <div class="flex items-baseline gap-1">
+            <span class="text-teal-400 text-xl">$</span>
+            <h2 id="balanceAmount" class="text-4xl font-black">1.000.000</h2>
+        </div>
+        <div class="flex justify-between mt-3 pt-3 border-t border-white/10 text-xs text-gray-400">
+            <span>💰 Ingresos: $<span id="totalIncome">0</span></span>
+            <span>💸 Gastos: $<span id="totalExpenses">0</span></span>
+        </div>
+    </div>
+
+    <!-- Energy Meter -->
+    <!-- Energy Meter - Versión Anillo -->
+    <div class="glass-card p-5 mb-4 text-center">
+        <h3 class="text-xs uppercase text-gray-400 mb-3">⚡ ENERGIAS</h3>
+        <div class="relative w-32 h-32 mx-auto">
+            <!-- Círculo de fondo -->
+            <svg class="w-full h-full transform -rotate-90">
+                <circle cx="64" cy="64" r="56" stroke="rgba(255,255,255,0.1)" stroke-width="12" fill="none" />
+                <circle id="energyCircle" cx="64" cy="64" r="56" stroke="#4edea3" stroke-width="12" fill="none"
+                    stroke-dasharray="351.85" stroke-dashoffset="351.85" stroke-linecap="round"
+                    class="transition-all duration-700" />
+            </svg>
+            <!-- Porcentaje centrado -->
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                <span id="energyValue" class="text-3xl font-bold">100%</span>
+                <span class="text-[10px] text-gray-400">salud</span>
+            </div>
+        </div>
+        <p id="energyMessage" class="text-xs text-gray-400 mt-3">💪 Excelente! Sigue así</p>
+    </div>
+
+    <!-- Categoría Dinámica -->
+    <div class="glass-card p-5 mb-4">
+        <div class="flex justify-between items-center mb-3">
+            <div>
+                <h3 id="categoryName" class="text-lg font-bold">Familiar</h3>
+                <p class="text-xs text-gray-400">Límite: $<span id="categoryLimit">100.000</span></p>
+            </div>
+            <span id="categoryPercent" class="text-xs px-2 py-1 rounded bg-white/10">0%</span>
+        </div>
+        <div class="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+            <div id="categoryBar" class="h-full bg-teal-400 progress-bar" style="width: 0%"></div>
+        </div>
+        <div class="flex justify-between mt-3 text-xs">
+            <span id="categorySpent" class="text-teal-400">$0</span>
+            <span class="text-gray-400">Restante: $<span id="categoryRemaining">100.000</span></span>
+        </div>
+        <div id="categoryAlert" class="mt-3 hidden"></div>
+    </div>
+
+    <!-- Formularios -->
+    <div class="glass-card p-5 mb-4">
+        <h3 class="text-sm font-bold mb-3">➕ Registrar Nuevo Gasto</h3>
+        <input type="text" id="expenseConcept" placeholder="Concepto"
+            class="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm mb-3 focus:outline-none focus:border-teal-400">
+        <input type="number" id="expenseAmount" placeholder="Monto"
+            class="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm mb-3 focus:outline-none focus:border-teal-400">
+        <button id="addExpenseBtn"
+            class="w-full bg-teal-500 hover:bg-teal-600 text-white py-3 rounded-lg font-bold">Añadir Gasto</button>
+    </div>
+
+    <div class="glass-card p-5 mb-4">
+        <h3 class="text-sm font-bold mb-3">💰 Registrar Ingreso</h3>
+        <input type="text" id="incomeConcept" placeholder="Concepto"
+            class="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm mb-3 focus:outline-none focus:border-teal-400">
+        <input type="number" id="incomeAmount" placeholder="Monto"
+            class="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm mb-3 focus:outline-none focus:border-teal-400">
+        <button id="addIncomeBtn"
+            class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-lg font-bold">Añadir
+            Ingreso</button>
+    </div>
+
+    <!-- Transacciones -->
+    <div class="glass-card p-5 mb-4">
+        <div class="flex justify-between items-center mb-3">
+            <h3 class="text-sm font-bold">📋 Transacciones</h3>
+            <button id="clearTransactionsBtn" class="text-xs text-red-400">Limpiar todo</button>
+        </div>
+        <div id="transactionsList" class="space-y-2 max-h-64 overflow-y-auto">
+            <p class="text-center text-gray-500 text-sm py-4">No hay transacciones</p>
+        </div>
+    </div>
+
+    <!-- Modal Stats -->
+    <div id="statsModal" class="modal hidden">
+        <div class="glass-card p-5 w-11/12 max-w-sm">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold">📊 Estadísticas</h3>
+                <button id="closeModalBtn" class="text-gray-400 text-xl">&times;</button>
+            </div>
+            <div id="statsContent" class="space-y-2 text-sm"></div>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="fixed bottom-20 left-4 right-4 z-50 flex flex-col gap-2"></div>
+
+    <script>
+        // ==================== CONFIGURACIÓN ====================
+        const CATEGORIES = {
+            family: { name: 'Familiar', limit: 100000, emoji: '🏠' },
+            leisure: { name: 'Ocio', limit: 50000, emoji: '🎮' },
+            savings: { name: 'Ahorro', limit: 200000, emoji: '💰' },
+            investments: { name: 'Inversiones', limit: 500000, emoji: '📈' }
+        };
+
+        // ==================== ESTADO ====================
+        let state = {
+            balance: 1000000,
+            totalIncome: 0,
+            totalExpenses: 0,
+            transactions: [],
+            categorySpent: { family: 0, leisure: 0, savings: 0, investments: 0 },
+            currentCategory: 'family',
+            isBalanceVisible: false,
+            badges: { saver: false, consistent: false }
+        };
+
+        // ==================== UTILIDADES ====================
+        const formatCurrency = (amount) => new Intl.NumberFormat('es-CO').format(amount);
+        const formatDate = (date) => {
+            const d = new Date(date);
+            return `${d.getDate()}/${d.getMonth() + 1} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+        };
+
+        const showToast = (msg) => {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = `toast glass-card text-xs px-4 py-2 rounded-full mb-2`;
+            toast.innerHTML = msg;
+            container.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
+        };
+
+        // ==================== STORAGE ====================
+        const saveToStorage = () => {
+            localStorage.setItem('memo_state', JSON.stringify({
+                balance: state.balance,
+                totalIncome: state.totalIncome,
+                totalExpenses: state.totalExpenses,
+                transactions: state.transactions,
+                categorySpent: state.categorySpent,
+                badges: state.badges
+            }));
+        };
+
+        const loadFromStorage = () => {
+            const saved = localStorage.getItem('memo_state');
+            if (saved) {
+                try {
+                    const p = JSON.parse(saved);
+                    state.balance = p.balance ?? 1000000;
+                    state.totalIncome = p.totalIncome ?? 0;
+                    state.totalExpenses = p.totalExpenses ?? 0;
+                    state.transactions = p.transactions ?? [];
+                    state.categorySpent = p.categorySpent ?? { family: 0, leisure: 0, savings: 0, investments: 0 };
+                    state.badges = p.badges ?? { saver: false, consistent: false };
+                } catch (e) { }
+            }
+        };
+
+        // ==================== CÁLCULOS ====================
+        const getCategoryPercentage = (cat) => ((state.categorySpent[cat] || 0) / CATEGORIES[cat].limit) * 100;
+        const getOverallHealth = () => state.totalIncome === 0 ? 100 : Math.max(0, Math.min(100, ((state.totalIncome - state.totalExpenses) / state.totalIncome) * 100));
+
+        // ==================== ACTUALIZAR UI ====================
+        const updateBalanceUI = () => {
+            const balanceEl = document.getElementById('balanceAmount');
+            if (balanceEl) {
+                const formatted = formatCurrency(state.balance);
+                balanceEl.textContent = formatted;
+                if (state.isBalanceVisible) balanceEl.classList.remove('blur-md');
+                else balanceEl.classList.add('blur-md');
+            }
+            document.getElementById('totalIncome').textContent = formatCurrency(state.totalIncome);
+            document.getElementById('totalExpenses').textContent = formatCurrency(state.totalExpenses);
+        };
+
+        const updateCategoriesUI = () => {
+            const cat = state.currentCategory;
+            const cfg = CATEGORIES[cat];
+            const spent = state.categorySpent[cat] || 0;
+            const pct = getCategoryPercentage(cat);
+            const remaining = Math.max(0, cfg.limit - spent);
+
+            document.getElementById('categoryName').textContent = `${cfg.emoji} ${cfg.name}`;
+            document.getElementById('categoryLimit').textContent = formatCurrency(cfg.limit);
+            document.getElementById('categoryPercent').textContent = `${Math.round(pct)}%`;
+            document.getElementById('categorySpent').textContent = `$${formatCurrency(spent)}`;
+            document.getElementById('categoryRemaining').textContent = formatCurrency(remaining);
+
+            const bar = document.getElementById('categoryBar');
+            bar.style.width = `${Math.min(pct, 100)}%`;
+            if (pct >= 90) bar.className = 'h-full bg-red-500 progress-bar';
+            else if (pct >= 70) bar.className = 'h-full bg-yellow-500 progress-bar';
+            else bar.className = 'h-full bg-teal-400 progress-bar';
+
+            const alertDiv = document.getElementById('categoryAlert');
+            if (pct >= 70) {
+                alertDiv.innerHTML = `⚠️ Has usado el ${Math.round(pct)}% del presupuesto`;
+                alertDiv.className = 'mt-3 p-2 rounded-lg bg-red-500/20 text-red-300 text-xs';
+            } else {
+                alertDiv.className = 'mt-3 hidden';
+            }
+
+            document.querySelectorAll('.chip-btn').forEach(btn => {
+                if (btn.dataset.cat === cat) btn.classList.add('chip-active');
+                else btn.classList.remove('chip-active');
+            });
+        };
+
+        const updateEnergyUI = () => {
+            const health = getOverallHealth();
+            const energyValue = document.getElementById('energyValue');
+            const energyCircle = document.getElementById('energyCircle');
+            const energyMessage = document.getElementById('energyMessage');
+
+            if (energyValue) energyValue.textContent = `${Math.round(health)}%`;
+
+            if (energyCircle) {
+                // Circunferencia: 2 * pi * r = 2 * 3.1416 * 56 = 351.85
+                const circumference = 351.85;
+                const offset = circumference - (health / 100) * circumference;
+                energyCircle.style.strokeDashoffset = offset;
+
+                // Cambiar color según salud
+                if (health >= 70) energyCircle.setAttribute('stroke', '#4edea3');
+                else if (health >= 40) energyCircle.setAttribute('stroke', '#ffb95f');
+                else energyCircle.setAttribute('stroke', '#ffb4ab');
+            }
+
+            if (energyMessage) {
+                if (health >= 70) energyMessage.innerHTML = '💪 Excelente! Sigue así';
+                else if (health >= 40) energyMessage.innerHTML = '⚠️ Cuidado, revisa tus gastos';
+                else energyMessage.innerHTML = '🔴 Alerta! Necesitas ajustar tus finanzas';
+            }
+        };
+
+        const updateTransactionsUI = () => {
+            const container = document.getElementById('transactionsList');
+            if (state.transactions.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-500 text-sm py-4">No hay transacciones aún</p>';
+                return;
+            }
+            container.innerHTML = state.transactions.slice(0, 15).map(t => {
+                const isExpense = t.type === 'expense';
+                const cfg = CATEGORIES[t.category];
+                return `
+                    <div class="glass-card p-3 rounded-lg flex justify-between items-center">
+                        <div>
+                            <p class="text-sm font-medium">${t.concept}</p>
+                            <p class="text-xs text-gray-400">${formatDate(t.date)} ${cfg ? `• ${cfg.emoji} ${cfg.name}` : ''}</p>
+                        </div>
+                        <span class="${isExpense ? 'text-red-400' : 'text-teal-400'} font-bold">
+                            ${isExpense ? '-' : '+'}$${formatCurrency(t.amount)}
+                        </span>
+                    </div>
+                `;
+            }).join('');
+        };
+
+        const updateBadgesUI = () => {
+            const saver = document.querySelector('.badge-item[data-badge="saver"]');
+            const consistent = document.querySelector('.badge-item[data-badge="consistent"]');
+            if (saver && state.badges.saver) saver.classList.add('opacity-100');
+            if (consistent && state.badges.consistent) consistent.classList.add('opacity-100');
+        };
+
+        const checkBadges = () => {
+            if (!state.badges.saver && state.totalIncome > 0 && state.totalExpenses < state.totalIncome * 0.5) {
+                state.badges.saver = true;
+                showToast('🎉 ¡Desbloqueaste el badge AHORRADOR!');
+                saveToStorage();
+            }
+            if (!state.badges.consistent && state.transactions.length >= 10) {
+                state.badges.consistent = true;
+                showToast('🎉 ¡Desbloqueaste el badge CONSTANTE!');
+                saveToStorage();
+            }
+            updateBadgesUI();
+        };
+
+        const refreshAllUI = () => {
+            updateBalanceUI();
+            updateCategoriesUI();
+            updateEnergyUI();
+            updateTransactionsUI();
+        };
+
+        // ==================== ACCIONES ====================
+        const addExpense = () => {
+            const concept = document.getElementById('expenseConcept').value;
+            const amount = parseFloat(document.getElementById('expenseAmount').value);
+            if (!concept || isNaN(amount) || amount <= 0) { showToast('❌ Concepto y monto válido requerido'); return; }
+            if (amount > state.balance) { showToast('❌ Saldo insuficiente'); return; }
+
+            state.transactions.unshift({ id: Date.now(), type: 'expense', category: state.currentCategory, concept, amount, date: new Date().toISOString() });
+            state.totalExpenses += amount;
+            state.balance -= amount;
+            state.categorySpent[state.currentCategory] += amount;
+
+            saveToStorage();
+            refreshAllUI();
+            checkBadges();
+            document.getElementById('expenseConcept').value = '';
+            document.getElementById('expenseAmount').value = '';
+            showToast(`✅ Gasto registrado: $${formatCurrency(amount)}`);
+        };
+
+        const addIncome = () => {
+            const concept = document.getElementById('incomeConcept').value;
+            const amount = parseFloat(document.getElementById('incomeAmount').value);
+            if (!concept || isNaN(amount) || amount <= 0) { showToast('❌ Concepto y monto válido requerido'); return; }
+
+            state.transactions.unshift({ id: Date.now(), type: 'income', category: null, concept, amount, date: new Date().toISOString() });
+            state.totalIncome += amount;
+            state.balance += amount;
+
+            saveToStorage();
+            refreshAllUI();
+            checkBadges();
+            document.getElementById('incomeConcept').value = '';
+            document.getElementById('incomeAmount').value = '';
+            showToast(`✅ Ingreso registrado: $${formatCurrency(amount)}`);
+        };
+
+        const clearTransactions = () => {
+            state.transactions = [];
+            state.totalExpenses = 0;
+            state.totalIncome = 0;
+            state.balance = 1000000;
+            state.categorySpent = { family: 0, leisure: 0, savings: 0, investments: 0 };
+            state.badges = { saver: false, consistent: false };
+            saveToStorage();
+            refreshAllUI();
+            showToast('🗑️ Historial limpiado');
+        };
+
+        const resetAll = () => {
+            if (confirm('¿Resetear todos los datos?')) {
+                localStorage.removeItem('memo_state');
+                state = {
+                    balance: 1000000,
+                    totalIncome: 0,
+                    totalExpenses: 0,
+                    transactions: [],
+                    categorySpent: { family: 0, leisure: 0, savings: 0, investments: 0 },
+                    currentCategory: 'family',
+                    isBalanceVisible: false,
+                    badges: { saver: false, consistent: false }
+                };
+                refreshAllUI();
+                showToast('🔄 Datos reiniciados');
+            }
+        };
+
+        const toggleBalance = () => {
+            state.isBalanceVisible = !state.isBalanceVisible;
+            document.getElementById('toggleText').textContent = state.isBalanceVisible ? 'Ocultar' : 'Ver saldo';
+            document.getElementById('toggleIcon').textContent = state.isBalanceVisible ? '👁️‍🗨️' : '👁️';
+            updateBalanceUI();
+            saveToStorage();
+            showToast(state.isBalanceVisible ? '💰 Saldo visible' : '👁️ Saldo oculto');
+        };
+
+        const switchCategory = (cat) => {
+            if (CATEGORIES[cat]) {
+                state.currentCategory = cat;
+                saveToStorage();
+                updateCategoriesUI();
+                showToast(`Cambiado a: ${CATEGORIES[cat].name}`);
+            }
+        };
+
+        // ==================== EVENTOS ====================
+        document.getElementById('toggleBalanceBtn').addEventListener('click', toggleBalance);
+        document.getElementById('addExpenseBtn').addEventListener('click', addExpense);
+        document.getElementById('addIncomeBtn').addEventListener('click', addIncome);
+        document.getElementById('clearTransactionsBtn').addEventListener('click', clearTransactions);
+        document.getElementById('resetBtn').addEventListener('click', resetAll);
+
+        document.querySelectorAll('.chip-btn').forEach(btn => {
+            btn.addEventListener('click', () => switchCategory(btn.dataset.cat));
+        });
+
+        // Stats modal
+        const modal = document.getElementById('statsModal');
+        document.getElementById('statsBtn').addEventListener('click', () => {
+            const health = getOverallHealth();
+            document.getElementById('statsContent').innerHTML = `
+                <div class="flex justify-between py-2"><span>💰 Saldo:</span><span>$${formatCurrency(state.balance)}</span></div>
+                <div class="flex justify-between py-2"><span>📈 Ingresos:</span><span class="text-teal-400">$${formatCurrency(state.totalIncome)}</span></div>
+                <div class="flex justify-between py-2"><span>📉 Gastos:</span><span class="text-red-400">$${formatCurrency(state.totalExpenses)}</span></div>
+                <div class="flex justify-between py-2"><span>⚡ Salud:</span><span>${Math.round(health)}%</span></div>
+                <div class="flex justify-between py-2"><span>🏆 Badges:</span><span>${Object.values(state.badges).filter(Boolean).length}/2</span></div>
+            `;
+            modal.classList.remove('hidden');
+        });
+        document.getElementById('closeModalBtn').addEventListener('click', () => modal.classList.add('hidden'));
+        modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.add('hidden'); });
+
+        // Project buttons
+        document.getElementById('projectBtn')?.addEventListener('click', () => showToast('🚀 Ejecutar proyecto es clave para tu futuro'));
+        document.getElementById('visualizeBtn')?.addEventListener('click', () => showToast(`📊 Salud financiera: ${Math.round(getOverallHealth())}%`));
+
+        // ==================== INICIALIZAR ====================
+        loadFromStorage();
+        refreshAllUI();
+        checkBadges();
+        showToast('✨ MeMo Finanzas lista');
+    </script>
+
+    <!-- Badges placeholder -->
+    <div class="glass-card p-5 mt-4">
+        <h3 class="text-xs font-bold text-teal-400 mb-3 uppercase">🏆 Premios</h3>
+        <div class="flex gap-3">
+            <div class="badge-item text-center opacity-40 transition-all" data-badge="saver">
+                <div class="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
+                    <span class="text-orange-400 text-xl">🏅</span>
+                </div>
+                <span class="text-[10px]">Ahorrador</span>
+            </div>
+            <div class="badge-item text-center opacity-40 transition-all" data-badge="consistent">
+                <div class="w-10 h-10 rounded-full bg-teal-500/20 flex items-center justify-center">
+                    <span class="text-teal-400 text-xl">⭐</span>
+                </div>
+                <span class="text-[10px]">Constante</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-card p-5 mt-4">
+        <h3 class="text-sm font-bold text-teal-400 mb-3">🤔 ¿Cuál es la necesidad productiva?</h3>
+        <div class="grid grid-cols-2 gap-3">
+            <button id="projectBtn" class="p-3 glass-card rounded-xl text-center">🚀 Ejecución Proyecto</button>
+            <button id="visualizeBtn" class="p-3 glass-card rounded-xl text-center">📊 Extraer Visualización</button>
+        </div>
+    </div>
+</body>
+
+</html>

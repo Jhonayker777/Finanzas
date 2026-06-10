@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html class="dark" lang="es">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0, user-scalable=yes" name="viewport"/>
+    <title>MeMo Finanzas - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="css/styles.css"/>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "secondary": "#4edea3",
+                        "tertiary": "#ffb95f",
+                        "error": "#ffb4ab"
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="pb-24">
+    <!-- Header -->
+    <header class="fixed top-0 w-full z-50 flex items-center justify-between px-4 h-16 backdrop-blur-xl border-b border-white/10 bg-black/30">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center">
+                <span class="text-black font-bold">M</span>
+            </div>
+            <h1 class="text-2xl font-bold text-white">MeMo</h1>
+        </div>
+        <div class="flex items-center gap-4">
+            <button id="resetBtn" class="material-symbols-outlined text-white hover:bg-white/10 p-2 rounded-full transition-all">refresh</button>
+            <button id="statsBtn" class="material-symbols-outlined text-white hover:bg-white/10 p-2 rounded-full transition-all">bar_chart</button>
+        </div>
+    </header>
+
+    <main class="mt-20 px-4 space-y-5 max-w-lg mx-auto">
+        <!-- Chips / Categorías -->
+        <div class="flex gap-2 overflow-x-auto pb-2">
+            <button class="chip-btn px-4 py-2 glass-card rounded-full text-xs whitespace-nowrap transition-all" data-cat="family">🏠 Familiar</button>
+            <button class="chip-btn px-4 py-2 glass-card rounded-full text-xs whitespace-nowrap transition-all" data-cat="leisure">🎮 Ocio</button>
+            <button class="chip-btn px-4 py-2 glass-card rounded-full text-xs whitespace-nowrap transition-all" data-cat="savings">💰 Ahorro</button>
+            <button class="chip-btn px-4 py-2 glass-card rounded-full text-xs whitespace-nowrap transition-all" data-cat="investments">📈 Inversiones</button>
+        </div>
+
+        <!-- Balance Card -->
+        <div class="glass-card p-5 rounded-xl relative overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-r from-teal-500/10 to-transparent"></div>
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-xs uppercase tracking-wider text-gray-400">SALDO TOTAL</span>
+                <button id="toggleBalanceBtn" class="flex items-center gap-1 text-teal-400 text-xs font-bold">
+                    <span id="toggleIcon" class="material-symbols-outlined text-sm">visibility_off</span>
+                    <span id="toggleText">Ocultar</span>
+                </button>
+            </div>
+            <div class="flex items-baseline gap-1">
+                <span class="text-teal-400 text-xl">$</span>
+                <h2 id="balanceAmount" class="text-4xl font-black tracking-tighter balance-visible">1.000.000</h2>
+            </div>
+            <div class="flex justify-between mt-3 pt-3 border-t border-white/10 text-xs text-gray-400">
+                <span>💰 Ingresos: $<span id="totalIncome">0</span></span>
+                <span>💸 Gastos: $<span id="totalExpenses">0</span></span>
+            </div>
+        </div>
+
+        <!-- Energy Meter -->
+        <div class="glass-card p-5 rounded-xl text-center">
+            <h3 class="text-xs uppercase tracking-wider text-gray-400 mb-4">⚡ ENERGIAS</h3>
+            <div class="relative w-32 h-32 mx-auto">
+                <svg class="w-full h-full transform -rotate-90">
+                    <circle cx="64" cy="64" r="56" stroke="rgba(255,255,255,0.1)" stroke-width="10" fill="none"/>
+                    <circle id="energyCircle" cx="64" cy="64" r="56" stroke="#4edea3" stroke-width="10" fill="none" 
+                            stroke-dasharray="351.85" stroke-dashoffset="0" stroke-linecap="round"
+                            class="transition-all duration-700"/>
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                    <span id="energyValue" class="text-2xl font-bold">100%</span>
+                    <span class="text-[10px] text-gray-500">salud</span>
+                </div>
+            </div>
+            <p id="energyMessage" class="text-xs text-gray-400 mt-3">💪 Excelente! Sigue así</p>
+        </div>
+
+        <!-- Categoría Dinámica -->
+        <div class="glass-card p-5 rounded-xl">
+            <div class="flex justify-between items-center mb-3">
+                <div>
+                    <h3 id="categoryName" class="text-lg font-bold">🏠 Familiar</h3>
+                    <p class="text-xs text-gray-400">Límite: $<span id="categoryLimit">100.000</span></p>
+                </div>
+                <span id="categoryPercent" class="text-xs px-2 py-1 rounded bg-white/10">0%</span>
+            </div>
+            <div class="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                <div id="categoryBar" class="h-full bg-teal-400 transition-all duration-500" style="width: 0%"></div>
+            </div>
+            <div class="flex justify-between mt-3 text-xs">
+                <span id="categorySpent" class="text-teal-400">$0</span>
+                <span class="text-gray-400">Restante: $<span id="categoryRemaining">100.000</span></span>
+            </div>
+            <div id="categoryAlert" class="mt-3 hidden"></div>
+        </div>
+
+        <!-- Formulario Gasto -->
+        <div class="glass-card p-5 rounded-xl">
+            <h3 class="text-sm font-bold mb-3">➕ Registrar Nuevo Gasto</h3>
+            <div class="space-y-3">
+                <input type="text" id="expenseConcept" placeholder="Concepto" class="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:outline-none focus:border-teal-400">
+                <input type="number" id="expenseAmount" placeholder="Monto" class="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:outline-none focus:border-teal-400">
+                <button id="addExpenseBtn" class="w-full bg-teal-500 hover:bg-teal-600 text-white py-3 rounded-lg font-bold transition-all active:scale-95">
+                    Añadir Gasto
+                </button>
+            </div>
+        </div>
+
+        <!-- Formulario Ingreso -->
+        <div class="glass-card p-5 rounded-xl">
+            <h3 class="text-sm font-bold mb-3">💰 Registrar Ingreso</h3>
+            <div class="space-y-3">
+                <input type="text" id="incomeConcept" placeholder="Concepto" class="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:outline-none focus:border-teal-400">
+                <input type="number" id="incomeAmount" placeholder="Monto" class="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:outline-none focus:border-teal-400">
+                <button id="addIncomeBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-lg font-bold transition-all active:scale-95">
+                    Añadir Ingreso
+                </button>
+            </div>
+        </div>
+
+        <!-- Transacciones -->
+        <div class="glass-card p-5 rounded-xl">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-sm font-bold">📋 Transacciones Recientes</h3>
+                <button id="clearTransactionsBtn" class="text-xs text-red-400 hover:text-red-300">Limpiar todo</button>
+            </div>
+            <div id="transactionsList" class="space-y-2 max-h-64 overflow-y-auto">
+                <p class="text-center text-gray-500 text-sm py-4">No hay transacciones aún</p>
+            </div>
+        </div>
+
+        <!-- Necesidad Productiva -->
+        <div class="glass-card p-5 rounded-xl bg-gradient-to-r from-teal-500/10 to-purple-500/10">
+            <h3 class="text-lg font-bold mb-3">🤔 ¿Cuál es la necesidad productiva?</h3>
+            <div class="grid grid-cols-2 gap-3">
+                <button id="projectBtn" class="p-3 glass-card rounded-xl text-center hover:border-teal-400 transition-all">
+                    <span class="material-symbols-outlined text-teal-400 block mb-1">rocket_launch</span>
+                    <span class="text-xs">Ejecución Proyecto</span>
+                </button>
+                <button id="visualizeBtn" class="p-3 glass-card rounded-xl text-center hover:border-purple-400 transition-all">
+                    <span class="material-symbols-outlined text-purple-400 block mb-1">insights</span>
+                    <span class="text-xs">Extraer Visualización</span>
+                </button>
+            </div>
+            <div id="productiveMessage" class="mt-3 text-xs text-center text-gray-300"></div>
+        </div>
+
+        <!-- Alcances y Premios -->
+        <div class="grid grid-cols-2 gap-4 pb-5">
+            <div class="glass-card p-4 rounded-xl">
+                <h3 class="text-xs font-bold text-teal-400 mb-3 uppercase">🎯 Alcances a futuro</h3>
+                <ul class="space-y-2 text-xs">
+                    <li class="flex items-center gap-2">✅ Automatización</li>
+                    <li class="flex items-center gap-2">✅ APIs bancarias</li>
+                    <li class="flex items-center gap-2">✅ Inversión cooperativa</li>
+                </ul>
+            </div>
+            <div class="glass-card p-4 rounded-xl">
+                <h3 class="text-xs font-bold text-teal-400 mb-3 uppercase">🏆 Premios</h3>
+                <div class="flex gap-3">
+                    <div class="badge-item text-center opacity-40 transition-all" data-badge="saver">
+                        <div class="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-orange-400">emoji_events</span>
+                        </div>
+                        <span class="text-[10px]">Ahorrador</span>
+                    </div>
+                    <div class="badge-item text-center opacity-40 transition-all" data-badge="consistent">
+                        <div class="w-10 h-10 rounded-full bg-teal-500/20 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-teal-400">verified</span>
+                        </div>
+                        <span class="text-[10px]">Constante</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Stats -->
+    <div id="statsModal" class="modal fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden">
+        <div class="glass-card p-5 rounded-xl w-11/12 max-w-sm">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold">📊 Estadísticas</h3>
+                <button id="closeModalBtn" class="text-gray-400 text-xl">&times;</button>
+            </div>
+            <div id="statsContent" class="space-y-2 text-sm"></div>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="fixed bottom-20 left-4 right-4 z-50 flex flex-col gap-2"></div>
+
+    <!-- Scripts en orden -->
+    <script src="js/config.js"></script>
+    <script src="js/modules/utils/formatters.js"></script>
+    <script src="js/modules/utils/dates.js"></script>
+    <script src="js/modules/utils/validators.js"></script>
+    <script src="js/modules/data/state.js"></script>
+    <script src="js/modules/data/storage.js"></script>
+    <script src="js/modules/data/actions.js"></script>
+    <script src="js/modules/budget/calculations.js"></script>
+    <script src="js/modules/budget/alerts.js"></script>
+    <script src="js/modules/feedback/messages.js"></script>
+    <script src="js/modules/feedback/recommendations.js"></script>
+    <script src="js/modules/feedback/waiting24h.js"></script>
+    <script src="js/modules/ui/balance.js"></script>
+    <script src="js/modules/ui/categories.js"></script>
+    <script src="js/modules/ui/energyMeter.js"></script>
+    <script src="js/modules/ui/transactions.js"></script>
+    <script src="js/modules/ui/badges.js"></script>
+    <script src="js/modules/ui/productive.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
